@@ -1,5 +1,6 @@
 package de.voasis;
 
+import net.kyori.adventure.text.Component;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -38,6 +39,7 @@ public class Main {
             event.setSpawningInstance(instanceContainer);
             player.setRespawnPoint(new Pos(0, 60, 0));
             initializeParkour(player);
+            player.sendActionBar(Component.text("Use /leave to quit."));
         });
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
@@ -53,6 +55,7 @@ public class Main {
             String command = event.getCommand();
             if (command.equalsIgnoreCase("leave")) {
                 sendToLobby(player);
+                player.kick("You have left the game.");
             }
         });
         minecraftServer.start("0.0.0.0", 25565);
@@ -67,12 +70,16 @@ public class Main {
     private static void generateNextParkourBlock(Player player, Pos position) {
         Pos lastBlock = parkourPositions.get(player);
         if (lastBlock != null && position.distanceSquared(lastBlock) > 4) {
-            int offsetX = ThreadLocalRandom.current().nextInt(-1, 2);
-            int offsetZ = ThreadLocalRandom.current().nextInt(-1, 2);
-            int offsetY = ThreadLocalRandom.current().nextBoolean() ? 1 : 0;
-            int nextX = lastBlock.blockX() + offsetX;
-            int nextY = lastBlock.blockY() + offsetY;
-            int nextZ = lastBlock.blockZ() + offsetZ;
+            int nextX, nextY, nextZ;
+            do {
+                nextX = lastBlock.blockX() + ThreadLocalRandom.current().nextInt(-2, 3);
+                nextY = lastBlock.blockY() + ThreadLocalRandom.current().nextInt(-1, 2);
+                nextZ = lastBlock.blockZ() + ThreadLocalRandom.current().nextInt(-2, 3);
+            } while (
+                    (nextY < 59 || nextY > 62) ||
+                            (Math.abs(nextX - lastBlock.blockX()) < 2 && Math.abs(nextZ - lastBlock.blockZ()) < 2) &&
+                                    (Math.abs(nextY - lastBlock.blockY()) != 1)
+            );
             Pos nextBlock = new Pos(nextX, nextY, nextZ);
             instanceContainer.setBlock(nextBlock.blockX(), nextBlock.blockY(), nextBlock.blockZ(), Block.STONE);
             parkourPositions.put(player, nextBlock);
