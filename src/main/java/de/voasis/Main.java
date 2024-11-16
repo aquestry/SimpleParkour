@@ -12,8 +12,6 @@ import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
-import net.minestom.server.network.packet.server.common.PluginMessagePacket;
-import org.jetbrains.annotations.NotNull;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,12 +26,7 @@ public class Main {
         MinecraftServer minecraftServer = MinecraftServer.init();
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
         instanceContainer = instanceManager.createInstanceContainer();
-        instanceContainer.setGenerator(unit -> {
-            for (int y = 50; y < 60; y++) {
-                unit.modifier().fillHeight(y, y + 1, Block.GRASS_BLOCK);
-            }
-            unit.modifier().fillHeight(0, 50, Block.DIRT);
-        });
+        instanceContainer.setGenerator(unit -> {});
         String velocitySecret = System.getenv("PAPER_VELOCITY_SECRET");
         if (velocitySecret != null) VelocityProxy.enable(velocitySecret);
         GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
@@ -65,7 +58,6 @@ public class Main {
             Player player = event.getPlayer();
             if (event.getCommand().equalsIgnoreCase("leave")) {
                 sendToLobby(player);
-                player.kick("You have left the game.");
             }
         });
         minecraftServer.start("0.0.0.0", 25565);
@@ -74,7 +66,7 @@ public class Main {
     private static void generateNextParkourBlocks(Player player) {
         Pos current = parkourPositions.get(player);
         for (int i = 0; i < 2; i++) {
-            Point nextPoint = DefaultGenerator.getNextPoint(current, 60);
+            Point nextPoint = getNextPoint(current);
             instanceContainer.setBlock(nextPoint.blockX(), nextPoint.blockY(), nextPoint.blockZ(), Block.STONE);
             current = new Pos(nextPoint.x(), nextPoint.y(), nextPoint.z());
         }
@@ -83,28 +75,19 @@ public class Main {
 
     private static void sendToLobby(Player player) {
         String message = "lobby:" + player.getUsername();
-        PluginMessagePacket packet = new PluginMessagePacket(
-                "nebula:main",
-                message.getBytes(StandardCharsets.UTF_8)
-        );
-        player.sendPacket(packet);
+        player.sendPluginMessage("nebula:main", message.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static class DefaultGenerator {
-        public static @NotNull Point getNextPoint(@NotNull Point current, int targetY) {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-            int y = -1;
-            if (targetY == 0) y = random.nextInt(-1, 2);
-            if (targetY > current.blockY()) y = 1;
-
-            int z = switch (y) {
-                case 1 -> random.nextInt(1, 3);
-                case -1 -> random.nextInt(2, 5);
-                default -> random.nextInt(1, 4);
-            };
-
-            int x = random.nextInt(-3, 4);
-            return current.add(x, y, z);
-        }
+    private static Point getNextPoint(Point current) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int y = -1;
+        if (60 > current.blockY()) y = 1;
+        int z = switch (y) {
+            case 1 -> random.nextInt(1, 3);
+            case -1 -> random.nextInt(2, 5);
+            default -> random.nextInt(1, 4);
+        };
+        int x = random.nextInt(-3, 4);
+        return current.add(x, y, z);
     }
 }
