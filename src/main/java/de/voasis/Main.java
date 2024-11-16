@@ -12,6 +12,7 @@ import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,18 +28,22 @@ public class Main {
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
         instanceContainer = instanceManager.createInstanceContainer();
         instanceContainer.setGenerator(unit -> {});
+
         String velocitySecret = System.getenv("PAPER_VELOCITY_SECRET");
         if (velocitySecret != null) VelocityProxy.enable(velocitySecret);
+
         GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
             Pos spawnPos = new Pos(0.5, 60, 0.5);
+            instanceContainer.setBlock(0, 59, 0, Block.STONE); // Fester Block für den Spawn
             player.setRespawnPoint(spawnPos);
             player.teleport(spawnPos);
             parkourPositions.put(player, spawnPos);
             generateNextParkourBlocks(player);
         });
+
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
             Pos position = player.getPosition();
@@ -54,12 +59,14 @@ public class Main {
                 }
             }
         });
+
         globalEventHandler.addListener(PlayerCommandEvent.class, event -> {
             Player player = event.getPlayer();
             if (event.getCommand().equalsIgnoreCase("leave")) {
                 sendToLobby(player);
             }
         });
+
         minecraftServer.start("0.0.0.0", 25565);
     }
 
@@ -80,13 +87,8 @@ public class Main {
 
     private static Point getNextPoint(Point current) {
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        int y = -1;
-        if (60 > current.blockY()) y = 1;
-        int z = switch (y) {
-            case 1 -> random.nextInt(1, 3);
-            case -1 -> random.nextInt(2, 5);
-            default -> random.nextInt(1, 4);
-        };
+        int y = random.nextInt(-1, 2);
+        int z = random.nextInt(1, 4);
         int x = random.nextInt(-3, 4);
         return current.add(x, y, z);
     }
