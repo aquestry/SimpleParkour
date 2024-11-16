@@ -10,6 +10,9 @@ import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.network.packet.server.play.ParticlePacket;
+import net.minestom.server.particle.Particle;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -24,6 +27,7 @@ public class Main {
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
+        MinecraftServer.getCommandManager().register(new LeaveCommand());
         instanceContainer = instanceManager.createInstanceContainer();
         instanceContainer.setGenerator(unit -> {});
         var vsecret = System.getenv("PAPER_VELOCITY_SECRET");
@@ -44,13 +48,12 @@ public class Main {
                 return;
             }
             if(lastBeneathBlock == null) {
-                spawnNewBlock(beneath);
+                spawnNewBlock(beneath, player);
                 lastBeneathBlock = beneath;
             }
             if(!beneath.equals(lastBeneathBlock) && !instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath)) {
                 if(beneath.distance(lastBeneathBlock) >= 2) {
-                    System.out.println("Beneath changed: " + beneath);
-                    spawnNewBlock(beneath);
+                    spawnNewBlock(beneath, player);
                     lastBeneathBlock = beneath;
                 }
             }
@@ -64,12 +67,22 @@ public class Main {
             instanceContainer.setBlock(block, Block.AIR);
         }
         placed.clear();
+        spawnedFrom.clear();
     }
 
-    private static void spawnNewBlock(Pos basePos) {
+    private static void spawnNewBlock(Pos basePos, Player player) {
         spawnedFrom.add(basePos);
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        Pos newBlock = new Pos(basePos.blockX() + random.nextInt(-1, 2), random.nextInt(-1, 2) + basePos.blockY(), random.nextInt(2, 4) + basePos.blockZ());
+        Pos newBlock = new Pos(
+                basePos.blockX() + random.nextInt(-1, 2),
+                basePos.blockY() + random.nextInt(-1, 2),
+                basePos.blockZ() + random.nextInt(2, 4)
+        );
+        player.sendPacket(new ParticlePacket(
+                Particle.POOF, false,
+                newBlock.x() + 0.5, newBlock.y() + 0.5, newBlock.z() + 0.5,
+                0.5f, 0.5f, 0.5f, 0.05f, 20
+        ));
         instanceContainer.setBlock(newBlock.blockX(), newBlock.blockY(), newBlock.blockZ(), Block.STONE);
         placed.add(newBlock);
     }
