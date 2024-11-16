@@ -24,16 +24,13 @@ public class Main {
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
         instanceContainer = instanceManager.createInstanceContainer();
         instanceContainer.setGenerator(unit -> unit.modifier().fillHeight(0, 1, Block.AIR));
-
         GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
-
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
             player.setRespawnPoint(new Pos(0, 60, 0));
             initializeParkour(player);
         });
-
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
             Pos position = player.getPosition();
@@ -43,14 +40,12 @@ public class Main {
             }
             generateNextParkourBlock(player, position);
         });
-
         globalEventHandler.addListener(PlayerCommandEvent.class, event -> {
             Player player = event.getPlayer();
             if (event.getCommand().equalsIgnoreCase("leave")) {
                 player.kick("You have left the game.");
             }
         });
-
         minecraftServer.start("0.0.0.0", 25565);
     }
 
@@ -66,11 +61,9 @@ public class Main {
             int offsetX = ThreadLocalRandom.current().nextInt(-1, 2);
             int offsetZ = ThreadLocalRandom.current().nextInt(-1, 2);
             int offsetY = ThreadLocalRandom.current().nextBoolean() ? 1 : 0;
-
             int nextX = lastBlock.blockX() + offsetX;
             int nextY = lastBlock.blockY() + offsetY;
             int nextZ = lastBlock.blockZ() + offsetZ;
-
             Pos nextBlock = new Pos(nextX, nextY, nextZ);
             instanceContainer.setBlock(nextBlock.blockX(), nextBlock.blockY(), nextBlock.blockZ(), Block.STONE);
             parkourPositions.put(player, nextBlock);
