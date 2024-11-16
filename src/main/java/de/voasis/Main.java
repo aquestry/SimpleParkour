@@ -28,30 +28,31 @@ public class Main {
         instanceContainer = instanceManager.createInstanceContainer();
         instanceContainer.setGenerator(unit -> unit.modifier().fillHeight(0, 1, Block.AIR));
         String velocitySecret = System.getenv("PAPER_VELOCITY_SECRET");
-        if (velocitySecret != null) {
-            VelocityProxy.enable(velocitySecret);
-            System.out.println("secret: " + velocitySecret);
-        }
+        if (velocitySecret != null) VelocityProxy.enable(velocitySecret);
         GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
-            player.setRespawnPoint(new Pos(0, 60, 0));
-            initializeParkour(player);
+            Pos spawnPos = new Pos(0, 60, 0);
+            instanceContainer.setBlock(0, 59, 0, Block.STONE);
+            player.setRespawnPoint(spawnPos);
+            player.teleport(spawnPos);
+            parkourPositions.put(player, spawnPos);
         });
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
             Pos position = player.getPosition();
             if (position.y() < 0) {
-                player.teleport(new Pos(0, 60, 0));
-                initializeParkour(player);
+                Pos resetPos = new Pos(0, 60, 0);
+                player.teleport(resetPos);
+                parkourPositions.put(player, resetPos);
+            } else {
+                generateNextParkourBlock(player, position);
             }
-            generateNextParkourBlock(player, position);
         });
         globalEventHandler.addListener(PlayerCommandEvent.class, event -> {
             Player player = event.getPlayer();
-            String command = event.getCommand();
-            if (command.equalsIgnoreCase("leave")) {
+            if (event.getCommand().equalsIgnoreCase("leave")) {
                 sendToLobby(player);
                 player.kick("You have left the game.");
             }
@@ -59,25 +60,15 @@ public class Main {
         minecraftServer.start("0.0.0.0", 25565);
     }
 
-    private static void initializeParkour(Player player) {
-        Pos startBlock = new Pos(0, 59, 0);
-        instanceContainer.setBlock(startBlock.blockX(), startBlock.blockY(), startBlock.blockZ(), Block.STONE);
-        parkourPositions.put(player, startBlock);
-    }
-
     private static void generateNextParkourBlock(Player player, Pos position) {
         Pos lastBlock = parkourPositions.get(player);
         if (lastBlock != null && position.distanceSquared(lastBlock) > 4) {
-            int nextX, nextY, nextZ;
-            do {
-                nextX = lastBlock.blockX() + ThreadLocalRandom.current().nextInt(-2, 3);
-                nextY = lastBlock.blockY() + ThreadLocalRandom.current().nextInt(-1, 2);
-                nextZ = lastBlock.blockZ() + ThreadLocalRandom.current().nextInt(-2, 3);
-            } while (
-                    (nextY < 59 || nextY > 62) ||
-                            (Math.abs(nextX - lastBlock.blockX()) < 2 && Math.abs(nextZ - lastBlock.blockZ()) < 2) &&
-                                    (Math.abs(nextY - lastBlock.blockY()) != 1)
-            );
+            int forward = ThreadLocalRandom.current().nextInt(2, 5);
+            int side = ThreadLocalRandom.current().nextInt(-1, 2);
+            int upDown = ThreadLocalRandom.current().nextInt(-1, 2);
+            int nextX = lastBlock.blockX() + forward;
+            int nextY = Math.min(62, Math.max(59, lastBlock.blockY() + upDown));
+            int nextZ = lastBlock.blockZ() + side;
             Pos nextBlock = new Pos(nextX, nextY, nextZ);
             instanceContainer.setBlock(nextBlock.blockX(), nextBlock.blockY(), nextBlock.blockZ(), Block.STONE);
             parkourPositions.put(player, nextBlock);
