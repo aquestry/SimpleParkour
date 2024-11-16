@@ -7,9 +7,12 @@ import net.minestom.server.event.GlobalEventHandler;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerCommandEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.network.packet.server.common.PluginMessagePacket;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -24,6 +27,11 @@ public class Main {
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
         instanceContainer = instanceManager.createInstanceContainer();
         instanceContainer.setGenerator(unit -> unit.modifier().fillHeight(0, 1, Block.AIR));
+        String velocitySecret = System.getenv("PAPER_VELOCITY_SECRET");
+        if (velocitySecret != null) {
+            VelocityProxy.enable(velocitySecret);
+            System.out.println("secret: " + velocitySecret);
+        }
         GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
@@ -42,8 +50,9 @@ public class Main {
         });
         globalEventHandler.addListener(PlayerCommandEvent.class, event -> {
             Player player = event.getPlayer();
-            if (event.getCommand().equalsIgnoreCase("leave")) {
-                player.kick("You have left the game.");
+            String command = event.getCommand();
+            if (command.equalsIgnoreCase("leave")) {
+                sendToLobby(player);
             }
         });
         minecraftServer.start("0.0.0.0", 25565);
@@ -68,5 +77,14 @@ public class Main {
             instanceContainer.setBlock(nextBlock.blockX(), nextBlock.blockY(), nextBlock.blockZ(), Block.STONE);
             parkourPositions.put(player, nextBlock);
         }
+    }
+
+    private static void sendToLobby(Player player) {
+        String message = "lobby:" + player.getUsername();
+        PluginMessagePacket packet = new PluginMessagePacket(
+                "nebula:main",
+                message.getBytes(StandardCharsets.UTF_8)
+        );
+        player.sendPacket(packet);
     }
 }
