@@ -1,6 +1,5 @@
 package de.voasis;
 
-import net.kyori.adventure.text.Component;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -39,7 +38,6 @@ public class Main {
             event.setSpawningInstance(instanceContainer);
             player.setRespawnPoint(new Pos(0, 60, 0));
             initializeParkour(player);
-            player.sendActionBar(Component.text("Use /leave to quit."));
         });
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
