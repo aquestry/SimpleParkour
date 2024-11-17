@@ -12,7 +12,6 @@ import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.particle.Particle;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -21,8 +20,9 @@ public class Main {
 
     private static InstanceContainer instanceContainer;
     private static List<Pos> placed = new ArrayList<>();
-    private static Pos lastBeneathBlock = null;
     private static List<Pos> spawnedFrom = new ArrayList<>();
+    private static final Pos startBlock = new Pos(0, 59, 0);
+    private static final Pos startPos = new Pos(0.5, 60, 0.5);
 
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
@@ -36,8 +36,8 @@ public class Main {
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
-            instanceContainer.setBlock(0, 59, 0, Block.STONE);
-            player.setRespawnPoint(new Pos(0.5, 60, 0.5));
+            instanceContainer.setBlock(startBlock, Block.STONE);
+            player.setRespawnPoint(startPos);
         });
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
@@ -45,17 +45,9 @@ public class Main {
             beneath = new Pos(beneath.x(), beneath.y(), beneath.z(), 0 ,0);
             if(player.getPosition().y() < 0) {
                 reset(player);
-                return;
             }
-            if(lastBeneathBlock == null) {
+            if(instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath) || spawnedFrom.isEmpty()) {
                 spawnNewBlock(beneath, player);
-                lastBeneathBlock = beneath;
-            }
-            if(!beneath.equals(lastBeneathBlock) && !instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath)) {
-                if(beneath.distance(lastBeneathBlock) >= 2) {
-                    spawnNewBlock(beneath, player);
-                    lastBeneathBlock = beneath;
-                }
             }
         });
         minecraftServer.start("0.0.0.0", 25565);
