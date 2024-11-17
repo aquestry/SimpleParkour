@@ -29,6 +29,7 @@ public class Main {
     private static List<Pos> spawnedFrom = new ArrayList<>();
     private static final Pos startBlock = new Pos(0, 0, 0);
     private static final Pos startPos = new Pos(0.5, 1, 0.5);
+    private static boolean quit = false;
 
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
@@ -50,7 +51,8 @@ public class Main {
             player.sendActionBar(Component.text("Score: " + score));
             Pos beneath = player.getPosition().withY(player.getPosition().blockY() - 1).withX(player.getPosition().blockX()).withZ(player.getPosition().blockZ());
             beneath = new Pos(beneath.x(), beneath.y(), beneath.z(), 0 ,0);
-            if(player.getPosition().y() < -10) {
+            if(player.getPosition().y() < -10 && !quit) {
+                quit = true;
                 String message = "lobby:" + player.getUsername();
                 PluginMessagePacket packet = new PluginMessagePacket(
                         "nebula:main",
