@@ -1,5 +1,6 @@
 package de.voasis;
 
+import net.kyori.adventure.sound.Sound;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -12,6 +13,7 @@ import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.particle.Particle;
+import net.minestom.server.sound.SoundEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -19,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Main {
 
     private static InstanceContainer instanceContainer;
+    private static ThreadLocalRandom random = ThreadLocalRandom.current();
     private static List<Pos> placed = new ArrayList<>();
     private static List<Pos> spawnedFrom = new ArrayList<>();
     private static final Pos startBlock = new Pos(0, 59, 0);
@@ -36,7 +39,7 @@ public class Main {
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
-            instanceContainer.setBlock(startBlock, Block.STONE);
+            instanceContainer.setBlock(startBlock, Block.GOLD_BLOCK);
             player.setRespawnPoint(startPos);
         });
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
@@ -46,8 +49,11 @@ public class Main {
             if(player.getPosition().y() < 0) {
                 reset(player);
             }
-            if(!instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath) || spawnedFrom.isEmpty()) {
-                spawnNewBlock(beneath, player);
+            if(spawnedFrom.isEmpty()) {
+                spawnNewBlock(beneath, player, false);
+            }
+            if(!instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath)) {
+                spawnNewBlock(beneath, player, true);
             }
         });
         minecraftServer.start("0.0.0.0", 25565);
@@ -62,21 +68,33 @@ public class Main {
         spawnedFrom.clear();
     }
 
-    private static void spawnNewBlock(Pos basePos, Player player) {
+    private static void spawnNewBlock(Pos basePos, Player player, boolean effect) {
         spawnedFrom.add(basePos);
-        ThreadLocalRandom random = ThreadLocalRandom.current();
         Pos newBlock = new Pos(
                 basePos.blockX() + random.nextInt(-1, 2),
                 basePos.blockY() + random.nextInt(-1, 2),
                 basePos.blockZ() + random.nextInt(2, 4)
         );
-        player.sendPacket(new ParticlePacket(
-                Particle.POOF, false,
-                newBlock.x() + 0.5, newBlock.y() + 0.5, newBlock.z() + 0.5,
-                0.5f, 0.5f, 0.5f, 0.05f, 20
-        ));
-        instanceContainer.setBlock(newBlock.blockX(), newBlock.blockY(), newBlock.blockZ(), Block.STONE);
+        if(effect) {
+            player.sendPacket(new ParticlePacket(
+                    Particle.POOF, false,
+                    newBlock.x() + 0.5, newBlock.y() + 0.5, newBlock.z() + 0.5,
+                    0.5f, 0.5f, 0.5f, 0.05f, 20
+            ));
+            player.playSound(Sound.sound(SoundEvent.BLOCK_AMETHYST_BLOCK_HIT, Sound.Source.MASTER, 999, 1));
+        }
+        instanceContainer.setBlock(newBlock.blockX(), newBlock.blockY(), newBlock.blockZ(), getABlock());
         placed.add(newBlock);
+    }
+
+    public static Block getABlock() {
+        int r = random.nextInt(4);
+        return switch (r) {
+            case 1 -> Block.GRASS_BLOCK;
+            case 2 -> Block.STONE_BRICKS;
+            case 3 -> Block.RED_MUSHROOM_BLOCK;
+            default -> Block.AZALEA_LEAVES;
+        };
     }
 }
 
