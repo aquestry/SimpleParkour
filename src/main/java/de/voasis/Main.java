@@ -72,7 +72,7 @@ public class Main {
     private static void spawnNewBlock(Pos basePos, Player player, boolean effect) {
         Pos newBlock = new Pos(
                 basePos.blockX() + random.nextInt(-1, 2),
-                random.nextInt(1),
+                random.nextInt(2),
                 basePos.blockZ() + random.nextInt(3, 5)
         );
         if(effect) {
