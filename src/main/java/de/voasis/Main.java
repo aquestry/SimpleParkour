@@ -46,7 +46,7 @@ public class Main {
             if(player.getPosition().y() < 0) {
                 reset(player);
             }
-            if(instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath) || spawnedFrom.isEmpty()) {
+            if(!instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath) || spawnedFrom.isEmpty()) {
                 spawnNewBlock(beneath, player);
             }
         });
