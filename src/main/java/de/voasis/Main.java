@@ -7,7 +7,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.GlobalEventHandler;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
-import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -45,7 +45,7 @@ public class Main {
             instanceContainer.setBlock(startBlock, Block.GOLD_BLOCK);
             player.setRespawnPoint(startPos);
         });
-        globalEventHandler.addListener(PlayerMoveEvent.class, event -> {
+        globalEventHandler.addListener(PlayerPacketEvent.class, event -> {
             Player player = event.getPlayer();
             int score = spawnedFrom.size() - 1;
             player.sendActionBar(Component.text("Score: " + score));
