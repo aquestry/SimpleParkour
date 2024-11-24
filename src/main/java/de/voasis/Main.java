@@ -7,7 +7,8 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.GlobalEventHandler;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
-import net.minestom.server.event.player.PlayerPacketEvent;
+import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -45,29 +46,8 @@ public class Main {
             instanceContainer.setBlock(startBlock, Block.GOLD_BLOCK);
             player.setRespawnPoint(startPos);
         });
-        globalEventHandler.addListener(PlayerPacketEvent.class, event -> {
-            Player player = event.getPlayer();
-            int score = spawnedFrom.size() - 1;
-            player.sendActionBar(Component.text("Score: " + score));
-            Pos beneath = player.getPosition().withY(player.getPosition().blockY() - 1).withX(player.getPosition().blockX()).withZ(player.getPosition().blockZ());
-            beneath = new Pos(beneath.x(), beneath.y(), beneath.z(), 0 ,0);
-            if(player.getPosition().y() < -10 && !quit) {
-                quit = true;
-                String message = "lobby:" + player.getUsername();
-                PluginMessagePacket packet = new PluginMessagePacket(
-                        "nebula:main",
-                        message.getBytes(StandardCharsets.UTF_8)
-                );
-                player.sendPacket(packet);
-            }
-            if(spawnedFrom.isEmpty()) {
-                spawnNewBlock(beneath, player, false);
-            }
-            if(!instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath)) {
-                spawnedFrom.add(beneath);
-                spawnNewBlock(placed.getLast(), player, true);
-            }
-        });
+        globalEventHandler.addListener(PlayerMoveEvent.class, event -> update(event.getPlayer()));
+        globalEventHandler.addListener(PlayerSpawnEvent.class, event -> update(event.getPlayer()));
         minecraftServer.start("0.0.0.0", 25565);
     }
 
@@ -87,6 +67,29 @@ public class Main {
         }
         instanceContainer.setBlock(newBlock, getABlock());
         placed.add(newBlock);
+    }
+
+    private static void update(Player player) {
+        int score = spawnedFrom.size() - 1;
+        player.sendActionBar(Component.text("Score: " + score));
+        Pos beneath = player.getPosition().withY(player.getPosition().blockY() - 1).withX(player.getPosition().blockX()).withZ(player.getPosition().blockZ());
+        beneath = new Pos(beneath.x(), beneath.y(), beneath.z(), 0 ,0);
+        if(player.getPosition().y() < -10 && !quit) {
+            quit = true;
+            String message = "lobby:" + player.getUsername();
+            PluginMessagePacket packet = new PluginMessagePacket(
+                    "nebula:main",
+                    message.getBytes(StandardCharsets.UTF_8)
+            );
+            player.sendPacket(packet);
+        }
+        if(spawnedFrom.isEmpty()) {
+            spawnNewBlock(beneath, player, false);
+        }
+        if(!instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath)) {
+            spawnedFrom.add(beneath);
+            spawnNewBlock(placed.getLast(), player, true);
+        }
     }
 
     public static Block getABlock() {
