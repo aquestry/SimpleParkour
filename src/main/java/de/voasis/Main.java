@@ -12,6 +12,7 @@ import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
+import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.common.PluginMessagePacket;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
@@ -37,6 +38,7 @@ public class Main {
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
         instanceContainer = instanceManager.createInstanceContainer();
         instanceContainer.setGenerator(unit -> {});
+        instanceContainer.setChunkSupplier(LightingChunk::new);
         var vsecret = System.getenv("PAPER_VELOCITY_SECRET");
         if (vsecret != null) { VelocityProxy.enable(vsecret); }
         GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
