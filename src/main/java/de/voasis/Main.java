@@ -15,8 +15,6 @@ import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.common.PluginMessagePacket;
-import net.minestom.server.network.packet.server.play.ParticlePacket;
-import net.minestom.server.particle.Particle;
 import net.minestom.server.sound.SoundEvent;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -60,11 +58,6 @@ public class Main {
                 basePos.blockZ() + random.nextInt(3, 5)
         );
         if(effect) {
-            player.sendPacket(new ParticlePacket(
-                    Particle.POOF, false,
-                    newBlock.x() + 0.5, newBlock.y() + 0.5, newBlock.z() + 0.5,
-                    0.5f, 0.5f, 0.5f, 0.05f, 20
-            ));
             player.playSound(Sound.sound(SoundEvent.BLOCK_AMETHYST_BLOCK_HIT, Sound.Source.MASTER, 999, 1));
         }
         instanceContainer.setBlock(newBlock, getABlock());
