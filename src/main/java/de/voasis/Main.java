@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Main {
-
     private static InstanceContainer instanceContainer;
     private static ThreadLocalRandom random = ThreadLocalRandom.current();
     private static List<Pos> placed = new ArrayList<>();
@@ -30,7 +29,6 @@ public class Main {
     private static final Pos startBlock = new Pos(0, 0, 0);
     private static final Pos startPos = new Pos(0.5, 1, 0.5);
     private static boolean quit = false;
-
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
@@ -40,6 +38,7 @@ public class Main {
         var vsecret = System.getenv("PAPER_VELOCITY_SECRET");
         if (vsecret != null) { VelocityProxy.enable(vsecret); }
         GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
+        new NameTagHandler();
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
@@ -50,7 +49,6 @@ public class Main {
         globalEventHandler.addListener(PlayerSpawnEvent.class, event -> update(event.getPlayer()));
         minecraftServer.start("0.0.0.0", 25565);
     }
-
     private static void spawnNewBlock(Pos basePos, Player player, boolean effect) {
         Pos newBlock = new Pos(
                 basePos.blockX() + random.nextInt(-1, 2),
@@ -63,7 +61,6 @@ public class Main {
         instanceContainer.setBlock(newBlock, getABlock());
         placed.add(newBlock);
     }
-
     private static void update(Player player) {
         int score = spawnedFrom.size() - 1;
         player.sendActionBar(Component.text("Score: " + score));
@@ -86,7 +83,6 @@ public class Main {
             spawnNewBlock(placed.getLast(), player, true);
         }
     }
-
     public static Block getABlock() {
         int r = random.nextInt(4);
         return switch (r) {
