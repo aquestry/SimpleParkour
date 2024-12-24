@@ -7,6 +7,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.GlobalEventHandler;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
+import net.minestom.server.event.player.PlayerChatEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.extras.velocity.VelocityProxy;
@@ -46,6 +47,7 @@ public class Main {
             player.setRespawnPoint(startPos);
         });
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> update(event.getPlayer()));
+        globalEventHandler.addListener(PlayerChatEvent.class, event -> event.setCancelled(true));
         globalEventHandler.addListener(PlayerSpawnEvent.class, event -> update(event.getPlayer()));
         minecraftServer.start("0.0.0.0", 25565);
     }
