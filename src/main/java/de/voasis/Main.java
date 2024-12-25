@@ -2,6 +2,7 @@ package de.voasis;
 
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -30,6 +31,8 @@ public class Main {
     private static final Pos startBlock = new Pos(0, 0, 0);
     private static final Pos startPos = new Pos(0.5, 1, 0.5);
     private static boolean quit = false;
+    public static GlobalEventHandler globalEventHandler;
+    public static MiniMessage mm = MiniMessage.miniMessage();
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
@@ -38,8 +41,8 @@ public class Main {
         instanceContainer.setChunkSupplier(LightingChunk::new);
         var vsecret = System.getenv("PAPER_VELOCITY_SECRET");
         if (vsecret != null) { VelocityProxy.enable(vsecret); }
-        GlobalEventHandler globalEventHandler = MinecraftServer.getGlobalEventHandler();
-        new NameTagHandler();
+        globalEventHandler = MinecraftServer.getGlobalEventHandler();
+        new NebulaAPI();
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
