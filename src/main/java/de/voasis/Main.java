@@ -67,8 +67,11 @@ public class Main {
         placed.add(newBlock);
     }
     private static void update(Player player) {
-        int score = spawnedFrom.size() - 1;
-        player.sendActionBar(Component.text("Score: " + Math.clamp(score, 0, score)));
+        int score = spawnedFrom.size() ;
+        if(!spawnedFrom.isEmpty()) {
+            score--;
+        }
+        player.sendActionBar(Component.text("Score: " + score));
         Pos beneath = player.getPosition().withY(player.getPosition().blockY() - 1).withX(player.getPosition().blockX()).withZ(player.getPosition().blockZ());
         beneath = new Pos(beneath.x(), beneath.y(), beneath.z(), 0 ,0);
         if(player.getPosition().y() < -10 && !quit) {
