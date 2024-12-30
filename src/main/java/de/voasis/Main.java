@@ -8,7 +8,6 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
-import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
 import net.minestom.server.event.GlobalEventHandler;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Main {
+
     private static InstanceContainer instanceContainer;
     private static ThreadLocalRandom random = ThreadLocalRandom.current();
     private static List<Pos> placed = new ArrayList<>();
@@ -39,6 +39,7 @@ public class Main {
     private static int score;
     public static GlobalEventHandler globalEventHandler;
     public static MiniMessage mm = MiniMessage.miniMessage();
+
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
@@ -54,22 +55,24 @@ public class Main {
             event.setSpawningInstance(instanceContainer);
             instanceContainer.setBlock(startBlock, Block.GOLD_BLOCK);
             player.setRespawnPoint(startPos);
-            player.setGameMode(GameMode.CREATIVE);
+
         });
+        globalEventHandler.addListener(PlayerSpawnEvent.class, event -> event.getPlayer().sendActionBar(Component.text("Use /lobby to leave.")));
         globalEventHandler.addListener(PlayerMoveEvent.class, event -> update(event.getPlayer()));
         globalEventHandler.addListener(PlayerChatEvent.class, event -> event.setCancelled(true));
         globalEventHandler.addListener(PlayerSpawnEvent.class, event -> update(event.getPlayer()));
         minecraftServer.start("0.0.0.0", 25565);
     }
+
     private static void update(Player player){
         score = spawnedFrom.size();
         if(!spawnedFrom.isEmpty())score--;
         player.sendActionBar(Component.text("Score: "+score));
         Pos beneath=player.getPosition().withY(player.getPosition().blockY()-1).withX(player.getPosition().blockX()).withZ(player.getPosition().blockZ());
         beneath=new Pos(beneath.x(),beneath.y(),beneath.z(),0,0);
-        boolean quit = false;
-        if(player.getPosition().y()<-20&&!quit){
+        if(player.getPosition().y()<-20){
             resetGame(player);
+            return;
         }
         if(spawnedFrom.isEmpty())spawnNewBlock(beneath ,player);
         if(!instanceContainer.getBlock(beneath).isAir()&&!spawnedFrom.contains(beneath)){
@@ -82,14 +85,16 @@ public class Main {
             }
         }
     }
+
     private static void spawnNewBlock(Pos basePos,Player player){
+        if(spawnedFrom.contains(basePos)) return;
         boolean effect = placed.size() >= 2;
         Block block = getABlock();
         Pos np;
         do{
             int offX = random.nextInt(-1, 2);
             int offY = random.nextInt(-1, 2);
-            int offZ = random.nextInt(2, 4);
+            int offZ = random.nextInt(3, 4);
             np = new Pos(basePos.x() + offX, basePos.y() + offY, basePos.z() + offZ, 0, 0);
         } while((instanceContainer.isInVoid(np) || np.y() < -10 || placed.contains(np)));
         if(!effect) { instanceContainer.setBlock(np, block); placed.add(np); return; }
@@ -98,7 +103,7 @@ public class Main {
         e.setNoGravity(true);
         e.editEntityMeta(BlockDisplayMeta.class, m->{
             m.setBlockState(block);
-            m.setPosRotInterpolationDuration(2);
+            m.setPosRotInterpolationDuration(1);
             m.setHasGlowingEffect(true);
         });
         Pos finalNp = np;
@@ -119,15 +124,20 @@ public class Main {
     }
 
     private static void resetGame(Player player){
+        for (Entity entity : instanceContainer.getEntities()) {
+            if (entity.getEntityType() == EntityType.BLOCK_DISPLAY) {
+                entity.remove();
+            }
+        }
         for(Pos p : placed){
             instanceContainer.setBlock(p, Block.AIR);
         }
         placed.clear();
         spawnedFrom.clear();
         instanceContainer.setBlock(startBlock, Block.GOLD_BLOCK);
-        placed.add(startBlock);
         score = 0;
         player.teleport(startPos);
+        player.sendActionBar(Component.text("Score: " + score));
     }
 
     public static Block getABlock() {
