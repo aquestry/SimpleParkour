@@ -25,6 +25,7 @@ import net.minestom.server.particle.Particle;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.timer.TaskSchedule;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -32,8 +33,8 @@ public class Main {
 
     private static InstanceContainer instanceContainer;
     private static ThreadLocalRandom random = ThreadLocalRandom.current();
-    private static List<Pos> placed = new ArrayList<>();
-    private static List<Pos> spawnedFrom = new ArrayList<>();
+    private static List<Pos> placed = Collections.synchronizedList(new ArrayList<>());
+    private static List<Pos> spawnedFrom = Collections.synchronizedList(new ArrayList<>());
     private static final Pos startBlock = new Pos(0, 0, 0);
     private static final Pos startPos = new Pos(0.5, 1, 0.5);
     private static int score;
@@ -94,19 +95,22 @@ public class Main {
         do{
             int offX = random.nextInt(-1, 2);
             int offY = random.nextInt(-1, 2);
-            int offZ = random.nextInt(3, 4);
+            int offZ = random.nextInt(3, 5);
+            if(offZ >= 4 && offY == 1) { offZ--; }
             np = new Pos(basePos.x() + offX, basePos.y() + offY, basePos.z() + offZ, 0, 0);
         } while((instanceContainer.isInVoid(np) || np.y() < -10 || placed.contains(np)));
+        placed.add(np);
         if(!effect) { instanceContainer.setBlock(np, block); placed.add(np); return; }
         player.playSound(Sound.sound(SoundEvent.BLOCK_AMETHYST_BLOCK_HIT,Sound.Source.MASTER,999,1));
         Entity e = new Entity(EntityType.BLOCK_DISPLAY);
+        Pos finalNp = np;
+        instanceContainer.setBlock(finalNp, Block.BARRIER);
         e.setNoGravity(true);
         e.editEntityMeta(BlockDisplayMeta.class, m->{
             m.setBlockState(block);
-            m.setPosRotInterpolationDuration(1);
+            m.setPosRotInterpolationDuration(5);
             m.setHasGlowingEffect(true);
         });
-        Pos finalNp = np;
         e.setInstance(instanceContainer,basePos).thenRun(()->{
             MinecraftServer.getSchedulerManager().scheduleTask(()->{
                 if(e.isRemoved())return TaskSchedule.stop();
@@ -116,7 +120,6 @@ public class Main {
             MinecraftServer.getSchedulerManager().scheduleTask(()->{
                 instanceContainer.setBlock(finalNp, block);
                 player.sendPacket(new ParticlePacket(Particle.POOF, finalNp, new Vec(0.5, 0.5, 0.5), 3, 20));
-                placed.add(finalNp);
                 e.remove();
                 return null;
             },TaskSchedule.tick(10));
