@@ -25,4 +25,4 @@ jobs:
           docker buildx build \
             --platform linux/arm64,linux/amd64 \
             --tag anton691/simple-parkour:latest \
-            --push .a
+            --push .
