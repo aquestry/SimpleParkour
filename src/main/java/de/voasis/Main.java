@@ -21,12 +21,10 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.block.Block;
-import net.minestom.server.network.packet.server.common.PluginMessagePacket;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.particle.Particle;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.timer.TaskSchedule;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,7 +36,7 @@ public class Main {
     private static List<Pos> spawnedFrom = new ArrayList<>();
     private static final Pos startBlock = new Pos(0, 0, 0);
     private static final Pos startPos = new Pos(0.5, 1, 0.5);
-    private static boolean quit = false;
+    private static int score;
     public static GlobalEventHandler globalEventHandler;
     public static MiniMessage mm = MiniMessage.miniMessage();
     public static void main(String[] args) {
@@ -64,15 +62,14 @@ public class Main {
         minecraftServer.start("0.0.0.0", 25565);
     }
     private static void update(Player player){
-        int score=spawnedFrom.size();
+        score = spawnedFrom.size();
         if(!spawnedFrom.isEmpty())score--;
         player.sendActionBar(Component.text("Score: "+score));
         Pos beneath=player.getPosition().withY(player.getPosition().blockY()-1).withX(player.getPosition().blockX()).withZ(player.getPosition().blockZ());
         beneath=new Pos(beneath.x(),beneath.y(),beneath.z(),0,0);
-        if(player.getPosition().y()<-10&&!quit){
-            quit=true;
-            String m="lobby:"+player.getUsername();
-            player.sendPacket(new PluginMessagePacket("nebula:main",m.getBytes(StandardCharsets.UTF_8)));
+        boolean quit = false;
+        if(player.getPosition().y()<-20&&!quit){
+            resetGame(player);
         }
         if(spawnedFrom.isEmpty())spawnNewBlock(beneath ,player);
         if(!instanceContainer.getBlock(beneath).isAir()&&!spawnedFrom.contains(beneath)){
@@ -88,31 +85,51 @@ public class Main {
     private static void spawnNewBlock(Pos basePos,Player player){
         boolean effect = placed.size() >= 2;
         Block block = getABlock();
-        Pos np = new Pos(basePos.x() + random.nextInt(-1,2), basePos.y() + random.nextInt(2), basePos.z() + random.nextInt(3,5));
+        Pos np;
+        do{
+            int offX = random.nextInt(-1, 2);
+            int offY = random.nextInt(-1, 2);
+            int offZ = random.nextInt(2, 4);
+            np = new Pos(basePos.x() + offX, basePos.y() + offY, basePos.z() + offZ, 0, 0);
+        } while((instanceContainer.isInVoid(np) || np.y() < -10 || placed.contains(np)));
         if(!effect) { instanceContainer.setBlock(np, block); placed.add(np); return; }
         player.playSound(Sound.sound(SoundEvent.BLOCK_AMETHYST_BLOCK_HIT,Sound.Source.MASTER,999,1));
         Entity e = new Entity(EntityType.BLOCK_DISPLAY);
         e.setNoGravity(true);
         e.editEntityMeta(BlockDisplayMeta.class, m->{
             m.setBlockState(block);
-            m.setTranslation(new Vec(-0.5,0,-0.5));
-            m.setPosRotInterpolationDuration(3);
+            m.setPosRotInterpolationDuration(2);
+            m.setHasGlowingEffect(true);
         });
+        Pos finalNp = np;
         e.setInstance(instanceContainer,basePos).thenRun(()->{
             MinecraftServer.getSchedulerManager().scheduleTask(()->{
                 if(e.isRemoved())return TaskSchedule.stop();
-                e.teleport(np);
+                e.teleport(finalNp);
                 return TaskSchedule.tick(1);
             },TaskSchedule.tick(1));
             MinecraftServer.getSchedulerManager().scheduleTask(()->{
-                instanceContainer.setBlock(np, block);
-                player.sendPacket(new ParticlePacket(Particle.POOF, np, new Vec(0.5, 0.5, 0.5), 3, 20));
-                placed.add(np);
+                instanceContainer.setBlock(finalNp, block);
+                player.sendPacket(new ParticlePacket(Particle.POOF, finalNp, new Vec(0.5, 0.5, 0.5), 3, 20));
+                placed.add(finalNp);
                 e.remove();
                 return null;
             },TaskSchedule.tick(10));
         });
     }
+
+    private static void resetGame(Player player){
+        for(Pos p : placed){
+            instanceContainer.setBlock(p, Block.AIR);
+        }
+        placed.clear();
+        spawnedFrom.clear();
+        instanceContainer.setBlock(startBlock, Block.GOLD_BLOCK);
+        placed.add(startBlock);
+        score = 0;
+        player.teleport(startPos);
+    }
+
     public static Block getABlock() {
         int r = random.nextInt(4);
         return switch (r) {
