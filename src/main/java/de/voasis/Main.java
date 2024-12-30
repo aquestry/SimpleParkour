@@ -67,8 +67,9 @@ public class Main {
 
     private static void update(Player player){
         score = spawnedFrom.size();
-        if(!spawnedFrom.isEmpty())score--;
-        player.sendActionBar(Component.text("Score: "+score));
+        if(!spawnedFrom.isEmpty()) {
+            player.sendActionBar(Component.text("Score: " + score));
+        }
         Pos beneath=player.getPosition().withY(player.getPosition().blockY()-1).withX(player.getPosition().blockX()).withZ(player.getPosition().blockZ());
         beneath=new Pos(beneath.x(),beneath.y(),beneath.z(),0,0);
         if(player.getPosition().y()<-20){
@@ -76,7 +77,7 @@ public class Main {
             return;
         }
         if(spawnedFrom.isEmpty())spawnNewBlock(beneath ,player);
-        if(!instanceContainer.getBlock(beneath).isAir()&&!spawnedFrom.contains(beneath)){
+        if(!instanceContainer.getBlock(beneath).isAir() && !spawnedFrom.contains(beneath)){
             spawnedFrom.add(beneath);
             if(!placed.isEmpty()){
                 Pos last=placed.getLast();
@@ -119,7 +120,7 @@ public class Main {
             },TaskSchedule.tick(1));
             MinecraftServer.getSchedulerManager().scheduleTask(()->{
                 instanceContainer.setBlock(finalNp, block);
-                player.sendPacket(new ParticlePacket(Particle.POOF, finalNp, new Vec(0.5, 0.5, 0.5), 3, 20));
+                player.sendPacket(new ParticlePacket(Particle.POOF, finalNp, new Vec(0.5, 0.5, 0.5), 2, 15));
                 e.remove();
                 return null;
             },TaskSchedule.tick(10));
