@@ -22,6 +22,8 @@ import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.particle.Particle;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.timer.TaskSchedule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +40,7 @@ public class Main {
     private static int score;
     public static GlobalEventHandler globalEventHandler;
     public static MiniMessage mm = MiniMessage.miniMessage();
+    public static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
