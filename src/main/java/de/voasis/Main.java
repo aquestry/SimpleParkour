@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Main {
+
     private static InstanceContainer instanceContainer;
     private static ThreadLocalRandom random = ThreadLocalRandom.current();
     private static List<Pos> placed = Collections.synchronizedList(new ArrayList<>());
