@@ -2,28 +2,31 @@ package de.voasis;
 
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
-import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
 import net.minestom.server.event.GlobalEventHandler;
-import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
-import net.minestom.server.event.player.PlayerChatEvent;
-import net.minestom.server.event.player.PlayerMoveEvent;
-import net.minestom.server.event.player.PlayerSpawnEvent;
+import net.minestom.server.event.item.ItemDropEvent;
+import net.minestom.server.event.player.*;
 import net.minestom.server.extras.velocity.VelocityProxy;
 import net.minestom.server.instance.*;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.item.ItemComponent;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
+import net.minestom.server.network.packet.server.common.PluginMessagePacket;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.particle.Particle;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.server.timer.TaskSchedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +45,11 @@ public class Main {
     public static MiniMessage mm = MiniMessage.miniMessage();
     public static final Logger logger = LoggerFactory.getLogger(Main.class);
 
+    private static final ItemStack leaveItem = ItemStack.builder(Material.BARRIER)
+            .set(ItemComponent.ITEM_NAME, mm.deserialize("<red>Leave</red>"))
+            .set(ItemComponent.LORE, List.of(mm.deserialize("<white>Click to leave.</white>").decoration(TextDecoration.ITALIC, false)))
+            .build();
+
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
@@ -56,18 +64,38 @@ public class Main {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
             player.setRespawnPoint(startPos);
-
         });
         globalEventHandler.addListener(PlayerSpawnEvent.class, event -> {
             Player player = event.getPlayer();
             player.sendActionBar(Component.text("Use /lobby to leave."));
-            player.setGameMode(GameMode.CREATIVE);
+
+            player.getInventory().setItemStack(0, leaveItem);
             resetGame(player);
         });
-        globalEventHandler.addListener(PlayerMoveEvent.class, event -> update(event.getPlayer()));
+        globalEventHandler.addListener(PlayerHandAnimationEvent.class, event -> {
+            Player player = event.getPlayer();
+            if(player.getItemInMainHand().equals(leaveItem)) {
+                event.setCancelled(true);
+                leave(player);
+            }
+        });
+        globalEventHandler.addListener(PlayerSwapItemEvent.class, event -> event.setCancelled(true));
+        globalEventHandler.addListener(PlayerBlockPlaceEvent.class, event -> event.setCancelled(true));
+        globalEventHandler.addListener(PlayerBlockBreakEvent.class, event -> event.setCancelled(true));
+        globalEventHandler.addListener(ItemDropEvent.class, event -> event.setCancelled(true));
         globalEventHandler.addListener(PlayerChatEvent.class, event -> event.setCancelled(true));
+        globalEventHandler.addListener(PlayerMoveEvent.class, event -> update(event.getPlayer()));
         globalEventHandler.addListener(PlayerSpawnEvent.class, event -> update(event.getPlayer()));
         minecraftServer.start("0.0.0.0", 25565);
+    }
+
+    private static void leave(Player player) {
+        String message = "lobby:" + player.getUsername();
+        PluginMessagePacket packet = new PluginMessagePacket(
+                "nebula:main",
+                message.getBytes(StandardCharsets.UTF_8)
+        );
+        player.sendPacket(packet);
     }
 
     private static void update(Player player){
