@@ -79,7 +79,7 @@ public class Main {
             VelocityProxy.enable(vsecret);
         }
         globalEventHandler = MinecraftServer.getGlobalEventHandler();
-        new NebulaAPI();
+        new NebulaAPI(globalEventHandler, logger);
         globalEventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
             Player player = event.getPlayer();
             event.setSpawningInstance(instanceContainer);
