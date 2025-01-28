@@ -227,6 +227,7 @@ public class Main {
         player.teleport(startPos);
         spawnNewBlock(player);
         spawnNewBlock(player);
+        spawnNewBlock(player);
         player.sendActionBar(Component.text("Use /lobby to leave."));
     }
 
