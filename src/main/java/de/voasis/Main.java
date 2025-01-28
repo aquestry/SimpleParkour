@@ -159,7 +159,7 @@ public class Main {
             resetGame(player);
             return;
         }
-        if (beneath.blockZ() == placed.get(placed.size() - 2).blockZ() && !spawnedFrom.contains(beneath)) {
+        if (beneath.blockZ() == placed.get(placed.size() - 3).blockZ() && !spawnedFrom.contains(beneath)) {
             spawnedFrom.add(beneath);
             spawnNewBlock(player);
         }
